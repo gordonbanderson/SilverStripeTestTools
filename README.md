@@ -13,16 +13,18 @@ modules lacking any kind of testing.
 ##Installation
 * Install Ruby on your system if it is not already available.
 * Clone this project and copy addnewciSS and maketests into the system path.
- ```
-git clone **** sstools
+ 
+```
+git clone https://github.com/gordonbanderson/SilverStripeTestTools.git sstools
 cd sstools
 cp addnewciSS ~/bin
 cp maketests ~/bin
 chmod 700 ~/bin/addnewciSS
 chmod 700 ~/bin/maketests
- ```
- Note that Badger must also be installed, see
- https://github.com/gordonbanderson/Badger
+```
+
+Note that Badger must also be installed, see
+https://github.com/gordonbanderson/Badger
 
 ##Usage
 Please note that both of the following scripts are destructive, and that your
