@@ -44,6 +44,6 @@ Running the command `cd <module_path> && addnewciSS` will do the following:
 * Add badges to the README file suitable for the master branch
 * Echo instructions how to enable continous integration for both Scrutinizer and
 Travis for the module in question.
-All of these changes are made on a branch called continuousintegration.  Changes
+All of these changes are made on a branch called _continuousintegration_.  Changes
 can then be applied by merging into the master branch, cherry-picking relevant
-commits, or rebasing the continousintegration branch prior to merging.
+commits, or rebasing the _continuousintegration_ branch prior to merging.
