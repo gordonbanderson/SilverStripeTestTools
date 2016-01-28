@@ -1,0 +1,53 @@
+#!/usr/bin/env ruby
+
+module_dir = Dir.pwd + '/' + ARGV[0]
+puts 'Module dir:'+module_dir
+puts
+Dir.glob(module_dir+'/**/*.php').each do|file|
+	puts "FILE:#{file}"
+	if !file.include? '/tests/'
+		puts "Generating test skeleton for #{file}"
+		splits = file.split '/'
+		phpfile = splits[-1]
+
+		File.open(file, 'r') do |handle|
+			php = "<?php\n\n";
+			filename = phpfile.gsub '.php', ''
+			php << "class #{filename}Test extends SapphireTest {\n"
+			while line = handle.gets
+				if (line.include? 'function ')
+					line.gsub! 'public', ''
+					line.gsub! 'private', ''
+					line.gsub! 'protected', ''
+					line.gsub! 'static', ''
+					line.strip!
+					puts "LINE:#{line}"
+					is_comment = line[0] == '*' || line[0,1] == '/*'
+
+					if !is_comment
+					splits = line.split '('
+					name = splits[-2].strip
+					name.gsub!('function ', '')
+					name[0] = name[0].chr.upcase
+					name = 'test'+name
+					php << "\tpublic function #{name}() {\n"
+					php << "\t\t$this->markTestSkipped('TODO');\n"
+					php << "\t}\n\n";
+					end
+				end
+			end
+
+			php << "}\n";
+			puts php
+
+			phpfile.gsub! '.php', 'Test.php'
+			filepath = module_dir+'/tests/'+phpfile
+			puts
+			puts filepath
+
+			skel = File.new(filepath, "w+")
+			skel.puts php
+			skel.close
+		end
+	end
+end

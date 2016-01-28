@@ -1,0 +1,250 @@
+#!/usr/bin/env ruby
+require 'rubygems'
+require 'json'
+
+splits = Dir.pwd().split '/'
+dir = splits[-1]
+puts dir
+
+git_url = `git remote -v | grep push | grep origin`
+splits = git_url.split ':'
+path = splits[1]
+username = path.split('/')[0]
+project_name = path.split('/')[1]
+project_name = project_name.split('.git')[0]
+
+editorconfig='# For more information about the properties used in
+# this file, please see the EditorConfig documentation:
+# http://editorconfig.org/
+
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+indent_size = 4
+indent_style = tab
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Docs say 80 ideally, 100 ok, no more than 120
+# http://doc.silverstripe.org/en/getting_started/coding_conventions/
+max_line_length = 100
+
+[*.md]
+trim_trailing_whitespace = false
+
+[*.yml]
+indent_size = 2
+indent_style = space
+
+#PSR 2
+[**.php]
+indent_style = space
+indent_size = 4
+
+[{.travis.yml,package.json}]
+# The indent size used in the `package.json` file cannot be changed
+# https://github.com/npm/npm/pull/3180#issuecomment-16336516
+indent_size = 2
+indent_style = space
+'
+File.open('.editorconfig', 'w') do |filehandle|
+  filehandle.puts editorconfig
+end
+
+scrutinizer = 'inherit: true
+
+#Copied from https://www.adayinthelifeof.nl/2013/11/20/external-code-coverage-with-travis-scrutinizer/
+tools:
+    external_code_coverage:
+      timeout: 600
+    php_code_sniffer:
+      config:
+        standard: PSR2
+    php_cs_fixer:
+      extensions:
+        # Default:
+        - php
+      fixers: []
+      enabled: false
+      filter:
+            paths: [tests/*,code/*]
+            excluded_paths: []
+coding_style:
+  php:
+    indentation:
+      general:
+        use_tabs: false
+
+filter:
+    paths: [tests/*,code/*]
+'
+
+File.open('.scrutinizer.yml', 'w') do |filehandle|
+  filehandle.puts scrutinizer
+end
+
+license = 'Copyright (c) YEARS, USERNAME
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+'
+
+travis = '
+language: php
+
+sudo: false
+
+addons:
+  apt:
+    packages:
+      - tidy
+
+php:
+  - 5.3
+  - 5.4
+  - 5.5
+  - 5.6
+  - hhvm-nightly
+  - 7.0
+
+before_install:
+  - pip install --user codecov
+
+env:
+  global:
+    - DB=MYSQL CORE_RELEASE=3.1
+    - MODULE_PATH=<% MODULE_PATH %>
+    - COVERAGE=0
+
+matrix:
+  allow_failures:
+    - php: hhvm-nightly
+    - php: 7.0
+  include:
+    - php: 5.6
+      env: DB=PGSQL
+    - php: 5.6
+      env: DB=SQLITE
+    - php: hhvm
+      env: DB=MYSQL
+    - php: 5.6
+      env: DB=MYSQL CORE_RELEASE=3.2 COVERAGE=1
+    - php: 5.6
+      env: DB=PGSQL CORE_RELEASE=3.2
+    - php: 5.6
+      env: DB=SQLITE CORE_RELEASE=3.2
+    - php: 5.5
+      env: DB=MYSQL CORE_RELEASE=3.2
+    - php: 5.4
+      env: DB=MYSQL CORE_RELEASE=3.2
+    - php: 5.3
+      env: DB=MYSQL CORE_RELEASE=3.2
+    - php: hhvm
+      env: DB=MYSQL CORE_RELEASE=3.2
+
+
+before_script:
+  - phpenv rehash
+  - composer self-update || true
+  - git clone git://github.com/silverstripe-labs/silverstripe-travis-support.git ~/travis-support
+  - php ~/travis-support/travis_setup.php --source `pwd` --target ~/builds/ss
+  - cd ~/builds/ss
+
+script:
+  # Execute tests with no coverage.  This is the fastest option
+  - "if [ \"$COVERAGE\" = \"0\" ]; then vendor/bin/phpunit $MODULE_PATH/tests/; fi"
+
+  # Execute tests with coverage.  Do this for a small
+  - "if [ \"$COVERAGE\" = \"1\" ]; then vendor/bin/phpunit --coverage-clover=coverage.clover $MODULE_PATH/tests/; fi"
+
+after_script:
+  - "if [ \"$COVERAGE\" = \"1\" ]; then mv coverage.clover ~/build/$TRAVIS_REPO_SLUG/; fi"
+  - cd ~/build/$TRAVIS_REPO_SLUG
+  - wget https://scrutinizer-ci.com/ocular.phar
+  - "if [ \"$COVERAGE\" = \"1\" ]; then travis_retry codecov && travis_retry php ocular.phar code-coverage:upload --format=php-clover coverage.clover; fi"
+
+'
+
+file = File.read('composer.json')
+json = JSON.parse(file)
+composer_name = json['name']
+
+if !json['license']
+  puts "NO LICENSE FOUND!"
+  json['license'] = 'BSD-3-Clause'
+  puts JSON.pretty_generate(json)
+  File.open('composer.json', 'w') do |filehandle|
+    filehandle.puts JSON.pretty_generate(json)
+  end
+
+  File.open('LICENSE.md', 'w') do |filehandle|
+    filehandle.puts license
+  end
+end
+
+module_path = composer_name.split('/')[-1]
+puts "COMPOSER NAME: " + module_path
+
+travis.gsub!('<% MODULE_PATH %>', module_path)
+
+File.open('.travis.yml', 'w') do |filehandle|
+  filehandle.puts travis
+end
+
+git_attr='/tests export-ignore
+/docs export-ignore
+/.travis.yml export-ignore
+/.scrutinizer.yml export-ignore
+/phpunit.xml export-ignore
+'
+
+File.open('.gitattributes', 'w') do |filehandle|
+  filehandle.puts git_attr
+end
+
+# Check if a tests directory exists.  If not, create tests to be filled in
+test_dir = Dir.pwd() + '/tests'
+if (!Dir.exists?(test_dir))
+	puts "Creating tests"
+	`mkdir #{test_dir}`
+	`cd .. && maketests #{dir} && cd -`
+	`rm tests/_configTest.php`
+	`git add tests`
+	`git commit -m "WIP: Initial tests shell"`
+end
+`badger`
+`cp README.md /tmp/`
+`git checkout README.md`
+`git checkout -b continuous_integration`
+`cp /tmp/README.md .`
+`git add README.md`
+`git commit -m "ENHANCEMENT: Badges to indicate code quality"`
+`git add .travis.yml`
+`git add .scrutinizer.yml`
+`git add .editorconfig`
+`git commit -m "ENHANCEMENT: Setup for Continuous Integration and editor config"`
+`git add .gitattributes`
+`git commit -m "ENHANCEMENT: Standard git attributes file"`
+
+project_path = "#{username}/#{project_name}"
+puts "\n\n* Ensure that the branch continuous_integration is as expected\n"
+puts "* To add this project to Scrutinizer:"
+puts "\tOpen https://scrutinizer-ci.com/g/new in a browser logged in to Scrutinizer"
+puts "\tAdd #{project_path} in the Github repository field"
+puts
+puts "* To add this project to Travis:"
+puts "\tOpen https://travis-ci.org/profile/#{username} in a browser logged in to Travis"
+puts "\tEnable #{project_path} manually"
+
+puts "\nEdit LICENSE.md file"
+puts "\ngit push origin master will then start your first CI Build.\n\n"
