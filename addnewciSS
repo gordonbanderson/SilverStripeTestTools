@@ -228,11 +228,13 @@ end
 `git checkout -b continuous_integration`
 `cp /tmp/README.md .`
 `git add README.md`
-`git commit -m "ENHANCEMENT: Badges to indicate code quality"`
+`git commit -m "ENHANCEMENT: Badges for Travis, Scrutinizer, CodeCov and various for Packagist"`
 `git add .travis.yml`
+`git commit -m "ENHANCEMENT: Travis Cotinuous Integration file"`
 `git add .scrutinizer.yml`
+`git commit -m "ENHANCEMENT: Scrutinizer config file for code quality checking"`
 `git add .editorconfig`
-`git commit -m "ENHANCEMENT: Setup for Continuous Integration and editor config"`
+`git commit -m "ENHANCEMENT: Standard editor config"`
 `git add .gitattributes`
 `git commit -m "ENHANCEMENT: Standard git attributes file"`
 
@@ -248,3 +250,7 @@ puts "\tEnable #{project_path} manually"
 
 puts "\nEdit LICENSE.md file"
 puts "\ngit push origin master will then start your first CI Build.\n\n"
+
+puts "\n\nIf you already has files .travis.yml, .scrutinizer.yml, .editconfig, .gitattributes you may"
+puts "wish to cherry-pick from the branch continuous_integration or rebase."
+
