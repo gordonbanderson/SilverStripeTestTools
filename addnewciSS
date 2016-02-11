@@ -230,7 +230,7 @@ end
 `git add README.md`
 `git commit -m "ENHANCEMENT: Badges for Travis, Scrutinizer, CodeCov and various for Packagist"`
 `git add .travis.yml`
-`git commit -m "ENHANCEMENT: Travis Cotinuous Integration file"`
+`git commit -m "ENHANCEMENT: Travis Continuous Integration file"`
 `git add .scrutinizer.yml`
 `git commit -m "ENHANCEMENT: Scrutinizer config file for code quality checking"`
 `git add .editorconfig`
