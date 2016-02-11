@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 
-module_dir = Dir.pwd + '/' + ARGV[0]
+module_dir = Dir.pwd + '/' + ARGV[0].to_s
 puts 'Module dir:'+module_dir
 puts
 Dir.glob(module_dir+'/**/*.php').each do|file|
