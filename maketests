@@ -1,7 +1,13 @@
 #!/usr/bin/env ruby
 
 module_dir = Dir.pwd + '/' + ARGV[0].to_s
+test_dir = module_dir + '/tests'
 puts 'Module dir:'+module_dir
+
+if !Dir.exist?(test_dir)
+	Dir.mkdir(test_dir)
+end
+
 puts
 Dir.glob(module_dir+'/**/*.php').each do|file|
 	puts "FILE:#{file}"
