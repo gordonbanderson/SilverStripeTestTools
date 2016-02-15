@@ -28,7 +28,7 @@ Dir.glob(module_dir+'/**/*.php').each do|file|
 					line.gsub! 'static', ''
 					line.strip!
 					puts "LINE:#{line}"
-					is_comment = line[0] == '*' || line[0,1] == '/*'
+					is_comment = line[0] == '*' || line[0,1] == '/*' || line[0,1] = '//'
 
 					if !is_comment
 					splits = line.split '('
