@@ -21,24 +21,24 @@ Dir.glob(module_dir+'/**/*.php').each do|file|
 			filename = phpfile.gsub '.php', ''
 			php << "class #{filename}Test extends SapphireTest {\n"
 			while line = handle.gets
+
 				if (line.include? 'function ')
 					line.gsub! 'public', ''
 					line.gsub! 'private', ''
 					line.gsub! 'protected', ''
 					line.gsub! 'static', ''
 					line.strip!
-					puts "LINE:#{line}"
-					is_comment = line[0] == '*' || line[0,1] == '/*' || line[0,1] = '//'
+					is_comment = line[0] == '*' || line[0,1] == '/*' || line[0,1] == '//'
 
 					if !is_comment
-					splits = line.split '('
-					name = splits[-2].strip
-					name.gsub!('function ', '')
-					name[0] = name[0].chr.upcase
-					name = 'test'+name
-					php << "\tpublic function #{name}() {\n"
-					php << "\t\t$this->markTestSkipped('TODO');\n"
-					php << "\t}\n\n";
+						splits = line.split '('
+						name = splits[-2].strip
+						name.gsub!('function ', '')
+						name[0] = name[0].chr.upcase
+						name = 'test' + name
+						php << "\tpublic function #{name}() {\n"
+						php << "\t\t$this->markTestSkipped('TODO');\n"
+						php << "\t}\n\n";
 					end
 				end
 			end
