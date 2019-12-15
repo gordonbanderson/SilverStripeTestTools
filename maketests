@@ -1,5 +1,9 @@
 #!/usr/bin/env ruby
 
+require 'json'
+require 'fileutils'
+
+
 module_dir = Dir.pwd + '/' + ARGV[0].to_s
 test_dir = module_dir + '/tests'
 puts 'Module dir:'+module_dir
@@ -8,18 +12,49 @@ if !Dir.exist?(test_dir)
 	Dir.mkdir(test_dir)
 end
 
+file = File.read(module_dir + 'composer.json')
+json = JSON.parse(file)
+
+psr4 = json['autoload']['psr-4']
+
+puts psr4.inspect
+flipped = psr4.map(&:reverse).to_h
+puts flipped.inspect
+
+# @todo Add check for tests and tests/
+test_namespace = flipped['tests/']
+puts test_namespace
+
+
 puts
 Dir.glob(module_dir + 'src/**/*.php').each do|file|
 	puts "FILE:#{file}"
+	path = file.gsub(module_dir, '')
+	puts 'PATH: ' + path
+	path_splits = path.split('/')
+	path_splits.shift
+	path_splits.pop
+	puts path_splits.inspect
 	if !file.include? '/tests/'
-		puts "Generating test skeleton for #{file}"
+		puts "DEBUG: Generating test skeleton for #{file}"
 		splits = file.split '/'
 		phpfile = splits[-1]
 
 		File.open(file, 'r') do |handle|
-			php = "<?php\n\n";
+			php = "<?php\n\n"
+
+			php << "namespace "
+			php << flipped['tests/']
+			php << path_splits.join("\\")
+
+			php << ";\n\n"
+			php << "use \\SilverStripe\\Dev\\SapphireTest;"
+			php << "\n\n"
+
+			puts php
+
 			filename = phpfile.gsub '.php', ''
-			php << "class #{filename}Test extends \\SilverStripe\\Dev\\SapphireTest {\n"
+			php << "class #{filename}Test extends SapphireTest {\n"
 			while line = handle.gets
 
 				if (line.include? 'function ')
@@ -31,9 +66,17 @@ Dir.glob(module_dir + 'src/**/*.php').each do|file|
 					is_comment = line[0] == '*' || line[0,1] == '/*' || line[0,1] == '//'
 
 					if !is_comment
+            puts "DEBUG: LINE=" + line
+
+            #
+            # DEBUG: LINE=function canView($member = null)
+						# DEBUG: name=function canView
+						# DEBUG: LINE=function canCreate($member = null, $context = array())
+
 						splits = line.split '('
 
 						name = splits[-2].strip
+            puts "DEBUG: name=" + name
 						name.gsub!('function ', '')
 						name[0] = name[0].chr.upcase
 						name = 'test' + name
@@ -48,13 +91,20 @@ Dir.glob(module_dir + 'src/**/*.php').each do|file|
 			puts php
 
 			phpfile.gsub! '.php', 'Test.php'
-			filepath = module_dir+'/tests/'+phpfile
+      puts "DEBUG: path splits= " + path_splits.inspect
+			filepath = module_dir+'tests/'+path_splits.join("/") + '/' + phpfile
+
+      puts("DEBUG: SAVING TO " + filepath)
+      #path_splits.pop
+      FileUtils.mkdir_p module_dir+'/tests/'+path_splits.join("/") + "/"
 			puts
 			puts filepath
 
 			skel = File.new(filepath, "w+")
 			skel.puts php
 			skel.close
+
+      puts "DEBUG:"
 		end
 	end
 end
